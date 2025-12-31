@@ -12,15 +12,15 @@ import java.util.List;
 public class ProductService {
 
     private final ProductRepository repo;
-    private final ProductTxService productTxService;
 
-    public ProductService(ProductRepository repo, ProductTxService productTxService) {
+    public ProductService(ProductRepository repo) {
         this.repo = repo;
-        this.productTxService = productTxService;
     }
 
-    public void create(Product product) {
-        productTxService.createThenFail(product); // 外部调用
+    @Transactional
+    public void create(Product p) {
+        repo.create(p);
+        // 先不 throw，下一步再测
     }
 
     public Product get(Long id) {

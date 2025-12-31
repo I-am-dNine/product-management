@@ -13,12 +13,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Disabled("ProductService currently delegates to ProductTxService. Will be re-enabled when transaction boundary moves back.")
-@ExtendWith(MockitoExtension.class) // 启用 Mockito（JUnit 5）
+
+@SpringBootTest
 class ProductServiceTest {
 
     @Mock // 建立一个「假的 Repository」（不会碰 DB）
