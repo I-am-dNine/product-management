@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -104,7 +105,7 @@ class ProductRepositoryTest {
     }
 
     @Test // 并发测试
-    void re() throws Exception {
+    void decreaseStock_concurrently_should_not_oversell() throws Exception {
         Product p = new Product();
         p.setName("Concurrent Test");
         p.setPrice(new BigDecimal("100"));
@@ -117,9 +118,15 @@ class ProductRepositoryTest {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
+        AtomicInteger successCount = new AtomicInteger();
+        AtomicInteger failCount = new AtomicInteger();
+
         Runnable task = () -> {
             try {
                 productRepository.decreaseStock(productId, 1);
+                successCount.incrementAndGet();
+            } catch (Exception e) {
+                failCount.incrementAndGet();
             } finally {
                 latch.countDown();
             }
@@ -132,7 +139,9 @@ class ProductRepositoryTest {
 
         Product result = productRepository.findById(productId);
 
-        assertTrue(result.getStock() >= 0);
+        assertEquals(1, successCount.get());
+        assertEquals(1, failCount.get());
+        assertEquals(0, result.getStock());
     }
 
 
