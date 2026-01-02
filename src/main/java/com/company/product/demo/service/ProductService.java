@@ -4,7 +4,6 @@ import com.company.product.demo.model.Product;
 import com.company.product.demo.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
@@ -38,6 +37,14 @@ public class ProductService {
 
     public void delete(Long id) {
         repo.delete(id);
+    }
+
+    @Transactional
+    public void decreaseStockAndFail(Long productId) {
+        repo.decreaseStock(productId, 1);
+
+        // 故意制造异常
+        throw new RuntimeException("boom");
     }
 }
 

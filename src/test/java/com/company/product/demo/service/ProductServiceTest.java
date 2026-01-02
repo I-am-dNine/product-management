@@ -14,12 +14,14 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 
 @SpringBootTest
+@ActiveProfiles("test")
 class  ProductServiceTest {
 
     @Mock // 建立一个「假的 Repository」（不会碰 DB）
@@ -63,6 +65,21 @@ class  ProductServiceTest {
         productService.delete(id);
         // assert
         verify(productRepository, times(1)).delete(id);
+    }
+
+    @Test // 验证（异常有抛出 & Repository 的写入行为 发生 / 未发生 / 只发生一次）
+    void decreaseStock_shouldThrowException_and_stopFurtherProcessing() {
+        // given
+        Long productId = 1L;
+
+        // when
+        assertThrows(RuntimeException.class, () ->
+                productService.decreaseStockAndFail(productId)
+        );
+
+        // then
+        verify(productRepository).decreaseStock(productId, 1);
+        verifyNoMoreInteractions(productRepository);
     }
 
 }

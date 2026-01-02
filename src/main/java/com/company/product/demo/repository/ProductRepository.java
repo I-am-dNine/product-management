@@ -31,7 +31,7 @@ public class ProductRepository {
         return p;
     };
 
-    public void create(Product product) {
+    public Long create(Product product) {
         String sql = """
         INSERT INTO product (name, price, stock)
         VALUES (:name, :price, :stock)
@@ -51,6 +51,8 @@ public class ProductRepository {
         Map<String, Object> keys = keyHolder.getKeys();
         Long id = ((Number) keys.get("ID")).longValue();
         product.setId(id);
+
+        return product.getId();
     }
 
     public Product findById(Long id) {
