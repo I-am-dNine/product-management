@@ -1,8 +1,11 @@
 package com.company.product.demo.repository;
 
 import com.company.product.demo.model.Product;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,15 +33,24 @@ public class ProductRepository {
 
     public void create(Product product) {
         String sql = """
-            INSERT INTO product (name, price, stock)
-            VALUES (:name, :price, :stock)
-        """;
+        INSERT INTO product (name, price, stock)
+        VALUES (:name, :price, :stock)
+    """;
 
-        jdbc.update(sql, Map.of(
-                "name", product.getName(),
-                "price", product.getPrice(),
-                "stock", product.getStock()
-        ));
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbc.update(
+                sql,
+                new MapSqlParameterSource()
+                        .addValue("name", product.getName())
+                        .addValue("price", product.getPrice())
+                        .addValue("stock", product.getStock()),
+                keyHolder
+        );
+
+        Map<String, Object> keys = keyHolder.getKeys();
+        Long id = ((Number) keys.get("ID")).longValue();
+        product.setId(id);
     }
 
     public Product findById(Long id) {
@@ -70,5 +82,25 @@ public class ProductRepository {
     public void delete(Long id) {
         jdbc.update("DELETE FROM product WHERE id = :id", Map.of("id", id));
     }
+
+    public void decreaseStock(Long productId, int quantity) {
+        String sql = """
+            UPDATE product
+            SET stock = stock - :qty
+            WHERE id = :id
+            AND stock >= :qty
+        """;
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", productId)
+                .addValue("qty", quantity);
+
+        int updated = jdbc.update(sql, params);
+
+        if (updated == 0) {
+            throw new IllegalStateException("Insufficient stock");
+        }
+    }
+
 }
 

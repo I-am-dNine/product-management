@@ -20,7 +20,7 @@ import java.util.List;
 
 
 @SpringBootTest
-class ProductServiceTest {
+class  ProductServiceTest {
 
     @Mock // 建立一个「假的 Repository」（不会碰 DB）
     ProductRepository productRepository;

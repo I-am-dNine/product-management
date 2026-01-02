@@ -9,8 +9,12 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -99,6 +103,37 @@ class ProductRepositoryTest {
         assertEquals(0, result.size());
     }
 
+    @Test // 并发测试
+    void re() throws Exception {
+        Product p = new Product();
+        p.setName("Concurrent Test");
+        p.setPrice(new BigDecimal("100"));
+        p.setStock(1);
+
+        productRepository.create(p);
+        Long productId = p.getId();
+
+        int threadCount = 2;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        Runnable task = () -> {
+            try {
+                productRepository.decreaseStock(productId, 1);
+            } finally {
+                latch.countDown();
+            }
+        };
+
+        executor.submit(task);
+        executor.submit(task);
+
+        latch.await();
+
+        Product result = productRepository.findById(productId);
+
+        assertTrue(result.getStock() >= 0);
+    }
 
 
 }
