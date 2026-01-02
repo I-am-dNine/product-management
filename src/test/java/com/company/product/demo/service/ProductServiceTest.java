@@ -2,8 +2,8 @@ package com.company.product.demo.service;
 
 import com.company.product.demo.model.Product;
 import com.company.product.demo.repository.ProductRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -12,74 +12,73 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-
 import java.math.BigDecimal;
-import java.util.List;
 
+@ExtendWith(MockitoExtension.class)
+class ProductServiceTest {
 
-@SpringBootTest
-@ActiveProfiles("test")
-class  ProductServiceTest {
+    @Mock
+    private ProductRepository productRepository;
 
-    @Mock // 建立一个「假的 Repository」（不会碰 DB）
-    ProductRepository productRepository;
+    @InjectMocks
+    private ProductService productService;
 
-    @InjectMocks // 把假的 repo 注入到真的 service 里
-    ProductService productService;
-
-    @Test // create
-    void create_should_call_repository_create() {
-        // arrange（准备资料）
-        Product product = new Product();
-        product.setName("Test Product");
-        product.setStock(10);
-
-        // act（执行行为）
-        productService.create(product);
-
-        // assert（验证行为）
-        verify(productRepository, times(1)).create(product);
-    }
-
-    @Test // update
-    void update_should_set_id_and_call_repository_update() {
-        // arrange
-        Long id = 1L;
-        Product product = new Product();
-        product.setName("Updated Product");
-        // act
-        productService.update(id, product);
-        // assert
-        assertEquals(id, product.getId());
-        verify(productRepository).update(product);
-    }
+    // ---------- create ----------
 
     @Test
-    void delete_should_call_repository_delete() {
-        // arrange
-        Long id = 1L;
-        // act
-        productService.delete(id);
-        // assert
-        verify(productRepository, times(1)).delete(id);
-    }
+    void create_should_delegate_to_repository() {
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setPrice(BigDecimal.valueOf(100));
+        product.setStock(10);
 
-    @Test // 验证（异常有抛出 & Repository 的写入行为 发生 / 未发生 / 只发生一次）
-    void decreaseStock_shouldThrowException_and_stopFurtherProcessing() {
-        // given
-        Long productId = 1L;
+        productService.create(product);
 
-        // when
-        assertThrows(RuntimeException.class, () ->
-                productService.decreaseStockAndFail(productId)
-        );
-
-        // then
-        verify(productRepository).decreaseStock(productId, 1);
+        verify(productRepository).create(product);
         verifyNoMoreInteractions(productRepository);
     }
 
+    // ---------- update ----------
+
+    @Test
+    void update_should_set_id_and_delegate_to_repository() {
+        Long productId = 1L;
+
+        Product product = new Product();
+        product.setName("Updated Name");
+        product.setPrice(BigDecimal.valueOf(200));
+        product.setStock(5);
+
+        productService.update(productId, product);
+
+        assertEquals(productId, product.getId());
+        verify(productRepository).update(product);
+        verifyNoMoreInteractions(productRepository);
+    }
+
+    // ---------- delete ----------
+
+    @Test
+    void delete_should_delegate_to_repository() {
+        Long productId = 1L;
+
+        productService.delete(productId);
+
+        verify(productRepository).delete(productId);
+        verifyNoMoreInteractions(productRepository);
+    }
+
+    // ---------- decreaseStockAndFail ----------
+
+    @Test
+    void decreaseStockAndFail_should_decrease_stock_and_throw_exception() {
+        Long productId = 1L;
+
+        assertThrows(RuntimeException.class,
+                () -> productService.decreaseStockAndFail(productId)
+        );
+
+        verify(productRepository).decreaseStock(productId, 1);
+        verifyNoMoreInteractions(productRepository);
+    }
 }
