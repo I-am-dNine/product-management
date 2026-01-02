@@ -1,176 +1,104 @@
-## Product Management Backend API – Design Notes
+# Product Management Backend (Onboarding Project)
 
-### 1. Project Scope & Goal
-This project implements a backend RESTful API using Spring Boot + JDBC with an RDBMS (MySQL in Docker).
+## Purpose
 
-The focus is not only on basic CRUD, but also on:
-- **Data correctness under concurrency**
-- **Request idempotency (冪等性)**
-- **Database load control under frequent reads**
-- **Unit test–driven validation**
+This is an onboarding project to practice:
+- Spring Boot + JDBC
+- Concurrency-safe inventory handling
+- Idempotent request design
+- Testing & transaction boundaries
 
----
+## Tech Stack
 
-### 2. Domain Model Design
+- Java 25
+- Spring Boot
+- JDBC (NamedParameterJdbcTemplate)
+- MySQL (Docker)
+- JUnit 5 / Mockito
 
-#### Product
-Represents a sellable item with inventory control.
+## Implemented Features
 
-**Fields**
-- `id`
-- `name`
-- `price`
-- `stock`
-- `created_at`
-- `updated_at`
+- Product CRUD REST API
+- Concurrency-safe stock deduction
+- Unit & integration testing
 
-#### Order
-Introduced to properly support idempotency and stock consumption.
+## Architecture Design
 
-**Fields**
-- `id`
-- `idempotency_key` (unique)
-- `product_id`
-- `quantity`
-- `status`
-- `created_at`
+### Three-Layer Architecture
 
-Although product CRUD is the main requirement, an `Order` entity is necessary to correctly model:
-- **Duplicate submissions**
-- **Concurrent stock deduction**
-- **Idempotent behavior**
+採用標準三層架構：
 
----
+```
+Controller → Service → Repository
+```
 
-### 3. RESTful API Design
+### Layer Responsibilities
 
-#### Product APIs
-- **POST** `/products`：新增产品  
-- **PUT** `/products/{id}`：修改产品  
-- **DELETE** `/products/{id}`：移除产品  
-- **GET** `/products/{id}`：查询单一产品  
-- **GET** `/products`：查询全部产品  
+- **Controller**: 處理 HTTP request / response
+- **Service**: 商業邏輯與 Transaction boundary
+- **Repository**: 純 JDBC 存取（SQL、RowMapper）
 
-#### Order API
-- **POST** `/orders`
-  - **Header**: `Idempotency-Key`
-  - **Body**: `productId`, `quantity`
+## Transaction Design
 
----
+### Transaction Boundary
 
-### 5. Idempotency Handling Strategy
+- `@Transactional` 僅放置於 Service 層
+- Repository 層不感知 Transaction
+- Transaction rollback 行為透過 Integration Test 驗證
 
-#### Problem
-Clients may accidentally send the same request multiple times, which must not create duplicate orders.
+### Design Principle
 
-#### Solution
-- When creating an order, the client must provide the `Idempotency-Key`.
-- In the `orders` table, set a constraint: `UNIQUE (idempotency_key)`.
+Transaction 是「業務流程」概念，而非資料存取細節。
 
-#### Flow
-1. Receive request with `Idempotency-Key`.
-2. Query order by key:
-   - **Exists** → return existing result.
-   - **Not exists** → create order.
+## Concurrency & Data Consistency
 
-This ensures:
-- **Safe retries**
-- **No duplicate orders**
-- **Deterministic behavior**
+### 庫存扣減策略
 
----
-
-### 6. Concurrency & Inventory Safety
-
-#### Problem
-Multiple orders consuming the same product stock may cause overselling.
-
-#### Chosen Approach (Atomic Update)
-Use an atomic stock update in SQL:
+使用資料庫原子操作避免超賣：
 
 ```sql
 UPDATE product
-SET stock = stock - :quantity
-WHERE id = :productId
-  AND stock >= :quantity;
+SET stock = stock - :qty
+WHERE id = :id AND stock >= :qty
 ```
 
-- If update count = `1` → **success**.
-- If update count = `0` → **insufficient stock**.
+若影響筆數為 0，視為庫存不足。
 
-#### Reasoning
-- **Atomic operations** avoid race conditions.
-- **No additional locking tables** are needed.
-- **JDBC** is straightforward to implement.
-- Behavior is **clear and reliable**.
+## Testing Strategy
 
----
+本專案明確區分測試層級，避免混用。
 
-### 7. Read Load Reduction Strategy
+### Repository Integration Test
 
-#### Problem
-Frequently queried product data may increase DB load.
+- 使用 `@SpringBootTest` + H2
+- 驗證內容：
+  - SQL 正確性
+  - schema
+  - RowMapper
+  - 並發行為
 
-#### Solution
-- Local in-memory cache using `ConcurrentHashMap`.
-- Cache scope: `getProductById`.
-- TTL-based expiration (short-lived).
-- Cache eviction on update/delete.
+### Service Unit Test
 
----
+- 不啟動 Spring context
+- 使用 Mockito
+- 驗證內容：
+  - 業務邏輯
+  - Repository 呼叫行為
 
-### 8. Data Access Strategy
+### Transaction Integration Test
 
-- Use `NamedParameterJdbcTemplate`.
-- Avoid ORM for better SQL visibility.
-- Explicit SQL for:
-  - inventory update
-  - idempotency checks
-  - transactional behavior
+- 啟動完整 Spring context
+- 使用真實 Repository
+- 驗證 exception 發生時 rollback 是否生效
 
-This keeps:
-- SQL logic **explicit**
-- Behavior **predictable**
-- Debugging **straightforward**
+## Learning Objectives
 
----
+- 理解 JDBC 實際執行行為
+- 理解 Spring Transaction 生效條件
+- 分辨 Unit Test 與 Integration Test 的責任邊界
 
-### 9. Logging Strategy (log4j2)
 
-- **API entry / exit logs**
-- **Order creation attempts**
-- **Idempotency hit detection**
-- **Stock deduction failure events**
+## Notes
 
----
-
-### 10. Testing Strategy
-
-#### Unit Tests (JUnit 5)
-
-**Test Case 1 – Idempotency**
-- Same `Idempotency-Key`
-- Multiple requests
-- Only one order is created
-
-**Test Case 2 – Concurrency Safety**
-- Limited stock
-- Multiple concurrent order attempts
-- No negative stock
-- Only valid number of orders succeed
-
----
-
-### 11. Java Version Consideration
-
-- Java 25 is used for development.
-
----
-
-### 12. Conclusion
-
-This project demonstrates:
-- **RESTful API fundamentals**
-- **JDBC-based data access**
-- **Idempotent request handling**
-- **Concurrency-safe inventory logic**
+- 详细的设计决策记录在 `/docs`
+- 本專案為 onboarding / learning 專用，刻意保留實驗與驗證過程之設計紀錄，協助後續回顧與延伸。
