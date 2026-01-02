@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@Transactional
 public class ProductService {
 
     private final ProductRepository repo;
@@ -16,10 +17,8 @@ public class ProductService {
         this.repo = repo;
     }
 
-    @Transactional
     public void create(Product p) {
         repo.create(p);
-        // 先不 throw，下一步再测
     }
 
     public Product get(Long id) {
@@ -39,11 +38,8 @@ public class ProductService {
         repo.delete(id);
     }
 
-    @Transactional
     public void decreaseStockAndFail(Long productId) {
         repo.decreaseStock(productId, 1);
-
-        // 故意制造异常
         throw new RuntimeException("boom");
     }
 }

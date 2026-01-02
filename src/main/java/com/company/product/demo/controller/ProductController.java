@@ -2,7 +2,6 @@ package com.company.product.demo.controller;
 
 import com.company.product.demo.model.Product;
 import com.company.product.demo.service.ProductService;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
