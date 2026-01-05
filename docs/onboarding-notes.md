@@ -112,7 +112,9 @@
 
 ---
 
-### Idempotency (Minimal Viable Design)
+## Idempotency
+
+### Minimal Viable Design
 
 - Scope: Product creation, Inventory decrease
 - Mechanism:
@@ -124,3 +126,33 @@
     - No Order domain
     - No cross-service coordination
     - No async retry
+
+### Testing Strategy & Design Rationale
+
+While implementing idempotency for product creation and inventory stock decrease,
+I initially attempted to run all idempotency-related tests under the same test profile.
+
+However, I observed inconsistent test results when `ProductServiceIdempotencyTest`
+was executed under the general `test` profile. Specifically, repeated requests
+with the same idempotency key resulted in multiple product records being created.
+
+#### Root Cause
+
+The product creation idempotency test relies on a clean and isolated database state,
+including a deterministic lifecycle for the `idempotency_record` table.
+Running it under the shared `test` profile introduced unintended shared state
+and schema assumptions, causing false negatives.
+
+#### Design Decision
+
+To ensure deterministic behavior and clear test semantics:
+
+- `ProductServiceIdempotencyTest` runs under a dedicated `test-idempotency` profile,
+  focusing on request-level idempotency guarantees.
+- `InventoryIdempotencyTest` remains under the general `test` profile,
+  validating stock mutation idempotency in a broader integration context.
+
+This separation improves test reliability, debuggability, and clearly documents
+the different assumptions each idempotency scenario depends on.
+
+---
