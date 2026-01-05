@@ -156,3 +156,14 @@ This separation improves test reliability, debuggability, and clearly documents
 the different assumptions each idempotency scenario depends on.
 
 ---
+
+## Why We Did NOT Use Repository Proxy for Idempotency
+
+- Considered repository-level proxy / decorator
+- Rejected due to:
+    - Repository already encapsulates JDBC dependency
+    - No exposed JdbcTemplate for safe inheritance
+    - Idempotency is business-level concern
+- Final choice:
+    - Handle idempotency at Service layer
+    - Keep Repository simple and testable
