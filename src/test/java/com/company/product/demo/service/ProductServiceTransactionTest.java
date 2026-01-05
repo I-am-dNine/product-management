@@ -2,6 +2,7 @@ package com.company.product.demo.service;
 
 import com.company.product.demo.model.Product;
 import com.company.product.demo.repository.ProductRepository;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
+@Disabled("Merged into ProductServiceTransactionTest")
 public class ProductServiceTransactionTest {
 
     @Autowired

@@ -12,6 +12,15 @@ public class Product {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    public Product() {
+    }
+
+    public Product(String name, BigDecimal price, int stock) {
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+
     // getters / setters
     public Long getId() {
 		return id;

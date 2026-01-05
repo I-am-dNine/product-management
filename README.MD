@@ -101,4 +101,4 @@ WHERE id = :id AND stock >= :qty
 ## Notes
 
 - 详细的设计决策记录在 `/docs`
-- 本專案為 onboarding / learning 專用，刻意保留實驗與驗證過程之設計紀錄，協助後續回顧與延伸。
+- 幂等性本專案為 onboarding / learning 專用，刻意保留實驗與驗證過程之設計紀錄，協助後續回顧與延伸。

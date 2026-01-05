@@ -16,3 +16,9 @@ CREATE TABLE orders (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_idempotency (idempotency_key)
 );
+
+CREATE TABLE idempotency_record (
+  idempotency_key VARCHAR(64) PRIMARY KEY,
+  resource_id BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
