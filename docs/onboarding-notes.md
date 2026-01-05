@@ -108,3 +108,19 @@
 - **Repository** → Integration Test
 - **Transaction Logic** → Spring-managed Service Test
 - **Orchestration-only logic** → not tested in isolation
+
+
+---
+
+### Idempotency (Minimal Viable Design)
+
+- Scope: Product creation, Inventory decrease
+- Mechanism:
+    - Client-provided idempotency key
+    - idempotency_record table as execution ledger
+- Guarantee:
+    - Same key → business logic executed at most once
+- Non-goals:
+    - No Order domain
+    - No cross-service coordination
+    - No async retry

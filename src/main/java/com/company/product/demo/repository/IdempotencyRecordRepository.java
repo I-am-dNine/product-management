@@ -32,6 +32,10 @@ public class IdempotencyRecordRepository {
         return results.stream().findFirst();
     }
 
+    public boolean existsByKey(String key) {
+        return findResourceId(key).isPresent();
+    }
+
     public void save(String key, Long resourceId) {
         String sql = """
             INSERT INTO idempotency_record (idempotency_key, resource_id)
@@ -44,4 +48,5 @@ public class IdempotencyRecordRepository {
         ));
     }
 }
+
 

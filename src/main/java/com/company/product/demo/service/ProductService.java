@@ -77,5 +77,18 @@ public class ProductService {
 
         return product;
     }
+
+    @Transactional
+    public void decreaseStock(Long productId, int qty, String idemKey) {
+
+        if (idempotencyRepo.existsByKey(idemKey)) {
+            return;
+        }
+
+        repo.decreaseStock(productId, qty);
+
+        idempotencyRepo.save(idemKey, productId);
+    }
+
 }
 
