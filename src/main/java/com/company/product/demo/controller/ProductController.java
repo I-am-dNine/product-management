@@ -26,7 +26,7 @@ public class ProductController {
 
     @GetMapping("/{id}")
     public Product get(@PathVariable Long id) {
-        return service.get(id);
+        return service.getProduct(id);
     }
 
     @GetMapping
@@ -36,7 +36,8 @@ public class ProductController {
 
     @PutMapping("/{id}")
     public void update(@PathVariable Long id, @RequestBody Product product) {
-        service.update(id, product);
+        product.setId(id);
+        service.updateProduct(product);
     }
 
     @DeleteMapping("/{id}")
@@ -53,8 +54,7 @@ public class ProductController {
     public ResponseEntity<Void> decreaseStock(
             @PathVariable("id") Long productId,
             @RequestBody DecreaseStockRequest request,
-            @RequestParam String idempotencyKey
-    ) {
+            @RequestParam String idempotencyKey) {
         service.decreaseStock(productId, request.getQuantity(), idempotencyKey);
         return ResponseEntity.ok().build();
     }

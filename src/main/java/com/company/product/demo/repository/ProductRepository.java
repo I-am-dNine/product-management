@@ -1,6 +1,8 @@
 package com.company.product.demo.repository;
 
 import com.company.product.demo.model.Product;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -15,6 +17,8 @@ import java.util.Map;
 public class ProductRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
+    private static final Logger log =
+            LoggerFactory.getLogger(ProductRepository.class);
 
     public ProductRepository(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
@@ -56,6 +60,7 @@ public class ProductRepository {
     }
 
     public Product findById(Long id) {
+        log.info(">>> QUERY DB: product id={}", id);
         String sql = "SELECT * FROM product WHERE id = :id";
         return jdbc.queryForObject(sql, Map.of("id", id), ROW_MAPPER);
     }

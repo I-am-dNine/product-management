@@ -2,6 +2,8 @@ package com.company.product.demo.service;
 
 import com.company.product.demo.model.Product;
 import com.company.product.demo.repository.ProductRepository;
+import com.company.product.demo.repository.IdempotencyRecordRepository;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +21,12 @@ class ProductServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private IdempotencyRecordRepository idempotencyRecordRepository;
+
+    @Mock
+    private RedisTemplate<String, Product> redisTemplate;
 
     @InjectMocks
     private ProductService productService;
@@ -38,34 +46,34 @@ class ProductServiceTest {
         verifyNoMoreInteractions(productRepository);
     }
 
-    // ---------- update ----------
+    // ---------- updateProduct ----------
 
     @Test
-    void update_should_set_id_and_delegate_to_repository() {
+    void updateProduct_should_delegate_to_repository_and_invalidate_cache() {
         Long productId = 1L;
 
         Product product = new Product();
+        product.setId(productId);
         product.setName("Updated Name");
         product.setPrice(BigDecimal.valueOf(200));
         product.setStock(5);
 
-        productService.update(productId, product);
+        productService.updateProduct(product);
 
-        assertEquals(productId, product.getId());
         verify(productRepository).update(product);
-        verifyNoMoreInteractions(productRepository);
+        verify(redisTemplate).delete(anyString());
     }
 
     // ---------- delete ----------
 
     @Test
-    void delete_should_delegate_to_repository() {
+    void delete_should_delegate_to_repository_and_invalidate_cache() {
         Long productId = 1L;
 
         productService.delete(productId);
 
         verify(productRepository).delete(productId);
-        verifyNoMoreInteractions(productRepository);
+        verify(redisTemplate).delete(anyString());
     }
 
     // ---------- decreaseStockAndFail ----------
@@ -75,8 +83,7 @@ class ProductServiceTest {
         Long productId = 1L;
 
         assertThrows(RuntimeException.class,
-                () -> productService.decreaseStockAndFail(productId)
-        );
+                () -> productService.decreaseStockAndFail(productId));
 
         verify(productRepository).decreaseStock(productId, 1);
         verifyNoMoreInteractions(productRepository);

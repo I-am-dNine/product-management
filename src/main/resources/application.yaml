@@ -4,11 +4,13 @@ spring:
     username: app
     password: app123
     driver-class-name: com.mysql.cj.jdbc.Driver
-
   sql:
     init:
       mode: always
-
-logging:
-  level:
-    root: INFO
+  logging:
+    level:
+      root: INFO
+  data:
+    redis:
+      host: localhost
+      port: 6379
