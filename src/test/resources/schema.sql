@@ -8,7 +8,10 @@ CREATE TABLE IF NOT EXISTS product (
 );
 
 CREATE TABLE IF NOT EXISTS idempotency_record (
-  idempotency_key VARCHAR(64) PRIMARY KEY,
+  idempotency_key VARCHAR(64) NOT NULL,
+  action VARCHAR(32) NOT NULL,
   resource_id BIGINT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (idempotency_key, action)
 );
+

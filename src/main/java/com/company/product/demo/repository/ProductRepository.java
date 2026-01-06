@@ -31,11 +31,11 @@ public class ProductRepository {
         return p;
     };
 
-    public void create(Product product) {
+    public Product create(Product product) {
         String sql = """
-        INSERT INTO product (name, price, stock)
-        VALUES (:name, :price, :stock)
-    """;
+                    INSERT INTO product (name, price, stock)
+                    VALUES (:name, :price, :stock)
+                """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("name", product.getName())
@@ -44,20 +44,15 @@ public class ProductRepository {
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
-        jdbc.update(
-                sql,
-                params,
-                keyHolder,
-                new String[]{"ID"}
-        );
+        jdbc.update(sql, params, keyHolder, new String[]{"ID"});
 
         Number key = keyHolder.getKey();
-
         if (key == null) {
             throw new IllegalStateException("Failed to retrieve generated key for Product");
         }
 
         product.setId(key.longValue());
+        return product;
     }
 
     public Product findById(Long id) {

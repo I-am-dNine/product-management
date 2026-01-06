@@ -17,6 +17,9 @@ public class ProductService {
     private final ProductRepository repo;
     private final IdempotencyRecordRepository idempotencyRepo;
 
+    public static final String ACTION_CREATE_PRODUCT = "CREATE_PRODUCT";
+    public static final String ACTION_DECREASE_PRODUCT = "DECREASE_PRODUCT";
+
 
     public ProductService(ProductRepository repo, IdempotencyRecordRepository idempotencyRepo) {
         this.repo = repo;
@@ -72,22 +75,26 @@ public class ProductService {
         // 3. 记录幂等 key → product.id
         idempotencyRepo.save(
                 idempotencyKey,
+                ACTION_CREATE_PRODUCT,
                 product.getId()
         );
 
         return product;
     }
 
-    @Transactional
     public void decreaseStock(Long productId, int qty, String idemKey) {
-
-        if (idempotencyRepo.existsByKey(idemKey)) {
+        // 使用 "insert-first" 模式确保并发安全
+        // 先尝试插入幂等记录，如果已存在（返回 false）说明是重复请求，直接返回
+        boolean isFirstRequest = idempotencyRepo.tryInsert(idemKey, ACTION_DECREASE_PRODUCT, productId);
+        
+        if (!isFirstRequest) {
+            // 重复请求，直接返回（幂等性保证）
             return;
         }
 
+        // 第一次请求，执行扣库存
+        // 如果扣库存失败，幂等记录已存在，后续相同请求会被拒绝（符合幂等性）
         repo.decreaseStock(productId, qty);
-
-        idempotencyRepo.save(idemKey, productId);
     }
 
 }
