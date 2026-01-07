@@ -34,7 +34,7 @@ class ProductRepositoryTest {
 
         // act
         productRepository.create(p); // INSERT INTO product
-        Product result = productRepository.findAll().get(0); //  RowMapper<Product> ✔ = SELECT * FROM product ✔
+        Product result = productRepository.findAll().get(0); // RowMapper<Product> ✔ = SELECT * FROM product ✔
 
         // assert - schema 是否正确 ✔
         assertEquals("Test Product", result.getName());
@@ -84,7 +84,7 @@ class ProductRepositoryTest {
         assertEquals(2, result.size());
     }
 
-    @Test //  测 删完之后，DB 真的少一笔
+    @Test // 测 删完之后，DB 真的少一笔
     void delete_should_remove_product_from_db() {
         // arrange
         Product p = new Product();
@@ -113,37 +113,47 @@ class ProductRepositoryTest {
         productRepository.create(p);
         Long productId = p.getId();
 
-        int threadCount = 2;
+        // 模拟 10 次并发 (Simulate 10 concurrent requests)
+        int threadCount = 10;
+
+        // ExecutorService 实现真正的并发执行环境 (Implements the real concurrent execution
+        // environment)
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+        // CountDownLatch 确保主线程等待所有并发任务完成 (Ensures main thread waits for all tasks to
+        // finish)
         CountDownLatch latch = new CountDownLatch(threadCount);
 
         AtomicInteger successCount = new AtomicInteger();
         AtomicInteger failCount = new AtomicInteger();
 
         Runnable task = () -> {
+            String threadName = Thread.currentThread().getName();
             try {
+                // 真正的并发调用点 (The actual concurrent call point)
                 productRepository.decreaseStock(productId, 1);
                 successCount.incrementAndGet();
+                System.out.printf("[%s] 🟢 扣减成功%n", threadName);
             } catch (Exception e) {
                 failCount.incrementAndGet();
+                System.out.printf("[%s] 🔴 扣减失败: %s%n", threadName, e.getMessage());
             } finally {
                 latch.countDown();
             }
         };
 
-        executor.submit(task);
-        executor.submit(task);
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(task);
+        }
 
         latch.await();
 
         Product result = productRepository.findById(productId);
 
+        // 预期：只有 1 个成功，9 个失败 (Expected: 1 success, 9 failures)
         assertEquals(1, successCount.get());
-        assertEquals(1, failCount.get());
+        assertEquals(9, failCount.get());
         assertEquals(0, result.getStock());
     }
 
-
 }
-
-
