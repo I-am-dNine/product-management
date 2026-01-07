@@ -5,6 +5,8 @@ import com.company.product.demo.model.Product;
 import com.company.product.demo.repository.IdempotencyRecordRepository;
 import com.company.product.demo.repository.ProductRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import java.util.Optional;
 @Transactional
 public class ProductService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
     private static final String CACHE_KEY_PREFIX = "product:";
     private static final Duration TTL = Duration.ofSeconds(60);
 
@@ -98,24 +101,37 @@ public class ProductService {
     }
 
     /**
-     * Read-through cache
+     * Read-through cache with Double-Checked Locking
      */
     public Product getProduct(Long productId) {
         String key = CACHE_KEY_PREFIX + productId;
 
-        // 1. cache hit
+        // 1. First check
         Product cached = redis.opsForValue().get(key);
         if (cached != null) {
+            log.info("CACHE_HIT productId={}", productId);
             return cached;
         }
 
-        // 2. cache miss → DB
-        Product product = repo.findById(productId);
+        // 2. Cache miss → Synchronized block (DCL)
+        synchronized (this) {
+            // 3. Second check (Double-Check)
+            cached = redis.opsForValue().get(key);
+            if (cached != null) {
+                log.info("CACHE_HIT (DCL) productId={}", productId);
+                return cached;
+            }
 
-        // 3. 回填 cache
-        redis.opsForValue().set(key, product, TTL);
+            log.info("CACHE_MISS productId={}", productId);
+            Product product = repo.findById(productId);
 
-        return product;
+            if (product != null) {
+                // 4. Fill cache inside lock
+                redis.opsForValue().set(key, product, TTL);
+            }
+
+            return product;
+        }
     }
 
     /**
