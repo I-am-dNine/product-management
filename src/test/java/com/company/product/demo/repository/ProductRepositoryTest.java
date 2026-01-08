@@ -113,15 +113,13 @@ class ProductRepositoryTest {
         productRepository.create(p);
         Long productId = p.getId();
 
-        // 模拟 10 次并发 (Simulate 10 concurrent requests)
+        // Simulate 10 concurrent requests
         int threadCount = 10;
 
-        // ExecutorService 实现真正的并发执行环境 (Implements the real concurrent execution
-        // environment)
+        // ExecutorService 实现真正的并发执行环境 (Implements the real concurrent execution environment)
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
-        // CountDownLatch 确保主线程等待所有并发任务完成 (Ensures main thread waits for all tasks to
-        // finish)
+        // CountDownLatch 确保主线程等待所有并发任务完成 (Ensures main thread waits for all tasks to finish)
         CountDownLatch latch = new CountDownLatch(threadCount);
 
         AtomicInteger successCount = new AtomicInteger();
@@ -143,7 +141,7 @@ class ProductRepositoryTest {
         };
 
         for (int i = 0; i < threadCount; i++) {
-            executor.submit(task);
+            executor.submit(task); // 不是依序执行，而是交给 OS / JVM scheduler
         }
 
         latch.await();
